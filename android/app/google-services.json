@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1006197314254",
+    "project_id": "gnb-property",
+    "storage_bucket": "gnb-property.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1006197314254:android:e18b521502162d8657369f",
+        "android_client_info": {
+          "package_name": "com.gnbapp.mock"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6B7vPnEUEBQqyX5i7rq8L-OecuDyqv58"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
