@@ -5,17 +5,16 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:Gnb_Property/features/enquire_details.dart';
+import 'package:Gnb_Property/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Gnb_Property/main.dart';
-
 void main() {
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    final propertyService = PropertyDetailService();
-    await tester.pumpWidget(MyApp(propertyService: propertyService));
+    await tester.pumpWidget(MyApp(navigatorKey: navigatorKey));
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

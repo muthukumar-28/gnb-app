@@ -27,8 +27,6 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
     super.initState();
     _startTime = DateTime.now();
     _propertyId = widget.property['id']?.toString() ?? 'unknown';
-
-    print('[Analytics] Viewed property: $_propertyId');
   }
 
   @override
@@ -63,7 +61,6 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
       existingData[_propertyId] = data;
 
       await file.writeAsString(jsonEncode(existingData), flush: true);
-      print('[Analytics] Data saved to $filePath');
     } catch (e) {
       print('[Analytics] Error saving data: $e');
     }
@@ -79,13 +76,11 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
       });
 
       _imageUploadClicks++;
-      print('[Analytics] Image upload clicked ($_imageUploadClicks times)');
     }
   }
 
   void _contactAgent() {
     _contactAgentClicks++;
-    print('[Analytics] Contact Agent clicked ($_contactAgentClicks times)');
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Contact Agent tapped')));

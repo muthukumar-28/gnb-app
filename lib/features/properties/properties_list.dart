@@ -1,6 +1,7 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:Gnb_Property/features/properties/properties_bloc.dart';
 import 'package:Gnb_Property/features/properties/property_detail.dart';
-import 'package:Gnb_Property/session_storage/session_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:Gnb_Property/utils/colors.dart';
 import 'package:Gnb_Property/features/account/account.dart';
@@ -17,7 +18,9 @@ class PropertyScreen extends StatefulWidget {
 class _PropertyScreenState extends State<PropertyScreen> {
   List<Map<String, dynamic>> _sortedProperties = [];
   String? _currentSortType;
+  String? _currentFilterType;
   String _searchText = '';
+
   @override
   void initState() {
     super.initState();
@@ -27,302 +30,249 @@ class _PropertyScreenState extends State<PropertyScreen> {
   void handleSort(String sortType) {
     setState(() {
       _currentSortType = sortType;
-
-      if (sortType == 'property') {
-        _sortedProperties.sort(
-          (a, b) => (a['id'] ?? 0).compareTo(b['id'] ?? 0),
-        );
-      } else if (sortType == 'price_asc') {
-        _sortedProperties.sort(
-          (a, b) => (a['price'] ?? 0).compareTo(b['price'] ?? 0),
-        );
-      } else if (sortType == 'price_desc') {
-        _sortedProperties.sort(
-          (a, b) => (b['price'] ?? 0).compareTo(a['price'] ?? 0),
-        );
-      } else if (sortType == 'area') {
-        _sortedProperties.sort(
-          (a, b) => (b['areaSqFt'] ?? 0).compareTo(a['areaSqFt'] ?? 0),
-        );
-      }
+      _applyFiltersAndSorting();
     });
+  }
+
+  void _applyFiltersAndSorting() {
+    final blocState = context.read<ListPropertyBloc>().state;
+    if (blocState is ListPropertyLoaded) {
+      _sortedProperties = List<Map<String, dynamic>>.from(blocState.properties);
+
+      if (_currentSortType != null) {
+        switch (_currentSortType) {
+          case 'property':
+            _sortedProperties.sort(
+              (a, b) => (a['id'] ?? 0).compareTo(b['id'] ?? 0),
+            );
+            break;
+          case 'price_asc':
+            _sortedProperties.sort(
+              (a, b) => (a['price'] ?? 0).compareTo(b['price'] ?? 0),
+            );
+            break;
+          case 'price_desc':
+            _sortedProperties.sort(
+              (a, b) => (b['price'] ?? 0).compareTo(a['price'] ?? 0),
+            );
+            break;
+          case 'area':
+            _sortedProperties.sort(
+              (a, b) => (b['areaSqFt'] ?? 0).compareTo(a['areaSqFt'] ?? 0),
+            );
+            break;
+        }
+      }
+
+      if (_searchText.isNotEmpty) {
+        _sortedProperties =
+            _sortedProperties.where((property) {
+              final title = (property['title'] ?? '').toString().toLowerCase();
+              return title.contains(_searchText);
+            }).toList();
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColor.backgroundColor,
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/images/home_bg.png"),
-            fit: BoxFit.fill,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "User Name",
-                          style: TextStyle(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF222326),
-                          ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "User Name",
+                        style: TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF222326),
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            SessionStorage.getUserData();
-                            Navigator.push(
+                      ),
+                      GestureDetector(
+                        onTap:
+                            () => Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => const AccountScreen(),
                               ),
-                            );
-                          },
-                          child: const CircleAvatar(
-                            radius: 20,
-                            backgroundImage: AssetImage(
-                              'assets/images/avatar.png',
                             ),
+                        child: const CircleAvatar(
+                          radius: 20,
+                          backgroundImage: AssetImage(
+                            'assets/images/avatar.png',
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                        ),
-                        hintText: 'Search',
-                        suffixIcon: const Icon(Icons.search_rounded),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide.none,
                         ),
                       ),
-                      onChanged: (value) {
-                        setState(() {
-                          _searchText = value.trim().toLowerCase();
-                        });
-                      },
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                      ),
+                      hintText: 'Search',
+                      suffixIcon: const Icon(Icons.search_rounded),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
-                  ],
-                ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchText = value.trim().toLowerCase();
+                        _applyFiltersAndSorting();
+                      });
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-
-              // Property list
-              Expanded(
-                child: BlocBuilder<ListPropertyBloc, ListPropertyState>(
-                  builder: (context, state) {
-                    if (state is ListPropertyLoaded) {
-                      final properties = state.properties;
-                      print(
-                        "object ${_sortedProperties.isEmpty} ${_sortedProperties.length != properties.length} $_currentSortType",
-                      );
-                      _sortedProperties = List<Map<String, dynamic>>.from(
-                        properties,
-                      );
-                      if (_currentSortType != null) {
-                        final sortType = _currentSortType;
-                        if (sortType == 'property') {
-                          _sortedProperties.sort(
-                            (a, b) => (a['id'] ?? 0).compareTo(b['id'] ?? 0),
-                          );
-                        } else if (sortType == 'price_asc') {
-                          _sortedProperties.sort(
-                            (a, b) =>
-                                (a['price'] ?? 0).compareTo(b['price'] ?? 0),
-                          );
-                        } else if (sortType == 'price_desc') {
-                          _sortedProperties.sort(
-                            (a, b) =>
-                                (b['price'] ?? 0).compareTo(a['price'] ?? 0),
-                          );
-                        } else if (sortType == 'area') {
-                          _sortedProperties.sort(
-                            (a, b) => (b['areaSqFt'] ?? 0).compareTo(
-                              a['areaSqFt'] ?? 0,
-                            ),
-                          );
-                        }
-                      }
-
-                      if (_searchText != '') {
-                        _sortedProperties =
-                            _sortedProperties.where((property) {
-                              final title =
-                                  (property['title'] ?? '')
-                                      .toString()
-                                      .toLowerCase();
-                              return title.contains(_searchText);
-                            }).toList();
-                      }
-
-                      return Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(30),
-                            topRight: Radius.circular(30),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: BlocBuilder<ListPropertyBloc, ListPropertyState>(
+                builder: (context, state) {
+                  if (state is ListPropertyLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (state is ListPropertyError) {
+                    return Center(
+                      child: Text(
+                        state.message,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    );
+                  } else if (state is ListPropertyLoaded) {
+                    _applyFiltersAndSorting();
+                    return Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Properties',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              Text(
+                                'Total: ${_sortedProperties.length} Properties',
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                            ],
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 10,
-                              offset: Offset(0, -3),
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Properties',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w400,
-                                    color: AppColor.primaryTextColor,
-                                  ),
-                                ),
-                                Text(
-                                  'Total: ${_sortedProperties.length} Properties',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w400,
-                                    color: AppColor.primaryTextColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            Expanded(
-                              child:
-                                  _sortedProperties.isNotEmpty
-                                      ? ListView.builder(
-                                        itemCount: _sortedProperties.length,
-                                        padding: const EdgeInsets.only(
-                                          bottom: 80,
-                                        ),
-                                        itemBuilder: (context, index) {
-                                          final property =
-                                              _sortedProperties[index];
-                                          return buildPropertyCard(property);
-                                        },
-                                      )
-                                      : Center(
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Image.asset(
-                                              'assets/images/mail_box.png',
-                                              height: 130,
-                                            ),
-                                            const SizedBox(height: 16),
-                                            const Text(
-                                              'No Properties Found',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
-                                                color:
-                                                    AppColor.primaryTextColor,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                          const SizedBox(height: 20),
+                          Expanded(
+                            child:
+                                _sortedProperties.isNotEmpty
+                                    ? ListView.builder(
+                                      itemCount: _sortedProperties.length,
+                                      padding: const EdgeInsets.only(
+                                        bottom: 80,
                                       ),
-                            ),
-                          ],
-                        ),
-                      );
-                    } else if (state is ListPropertyLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else if (state is ListPropertyError) {
-                      return Center(
-                        child: Text(
-                          state.message,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      );
-                    } else {
-                      return const SizedBox();
-                    }
-                  },
-                ),
+                                      itemBuilder:
+                                          (context, index) => buildPropertyCard(
+                                            _sortedProperties[index],
+                                          ),
+                                    )
+                                    : const Center(
+                                      child: Text('No Properties Found'),
+                                    ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return const SizedBox();
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-
-      // Floating Buttons
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'sortBtn',
-            backgroundColor: Colors.white,
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                builder:
-                    (context) => SortOptionsSheet(
-                      currentSortType: _currentSortType,
-                      onSortSelected: handleSort,
-                    ),
-              );
-            },
-            icon: const Icon(Icons.sort, color: Colors.black),
-            label: const Text('Sort', style: TextStyle(color: Colors.black)),
-          ),
-          const SizedBox(width: 16),
-          FloatingActionButton.extended(
-            heroTag: 'filterBtn',
-            backgroundColor: Colors.white,
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                builder: (context) => const FilterOptionsSheet(),
-              );
-            },
-            icon: const Icon(Icons.filter_list, color: Colors.black),
-            label: const Text('Filter', style: TextStyle(color: Colors.black)),
-          ),
-        ],
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                icon: const Icon(Icons.sort),
+                label: const Text('SORT'),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder:
+                        (context) => SortOptionsSheet(
+                          currentSortType: _currentSortType,
+                          onSortSelected: handleSort,
+                        ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                icon: const Icon(Icons.filter_list),
+                label: const Text('FILTER'),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder:
+                        (context) => FilterOptionsSheet(
+                          currentFilterType: _currentFilterType,
+                          onFilterSelected: (type) {
+                            setState(() => _currentFilterType = type);
+                          },
+                        ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget buildPropertyCard(Map<String, dynamic> property) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) => PropertyDetailPage(
-                  property: property, // Pass the map directly
-                ),
+      onTap:
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PropertyDetailPage(property: property),
+            ),
           ),
-        );
-      },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(16),
@@ -330,13 +280,6 @@ class _PropertyScreenState extends State<PropertyScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey.shade300),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 4,
-              offset: Offset(0, 2),
-            ),
-          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,10 +419,10 @@ class SortOptionsSheet extends StatelessWidget {
   final Function(String sortType) onSortSelected;
 
   const SortOptionsSheet({
-    Key? key,
+    super.key,
     required this.onSortSelected,
     this.currentSortType,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -512,42 +455,115 @@ class SortOptionsSheet extends StatelessWidget {
 }
 
 class FilterOptionsSheet extends StatelessWidget {
-  const FilterOptionsSheet({super.key});
+  final String? currentFilterType;
+  final Function(String filterType) onFilterSelected;
+
+  const FilterOptionsSheet({
+    super.key,
+    this.currentFilterType,
+    required this.onFilterSelected,
+  });
+
   @override
   Widget build(BuildContext context) {
     return Wrap(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Filter Options',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.read<ListPropertyBloc>().add(FetchProperties());
+                  onFilterSelected('');
+                },
+                child: const Text('Clear Filter'),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
         ListTile(
-          title: const Text('Property: Available'),
+          title: Text(
+            'Property: Available',
+            style: TextStyle(
+              color:
+                  currentFilterType == 'Available' ? Colors.blue : Colors.black,
+              fontWeight:
+                  currentFilterType == 'Available'
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+            ),
+          ),
           onTap: () {
             Navigator.pop(context);
+            onFilterSelected('Available');
             context.read<ListPropertyBloc>().add(
               FetchProperties(status: 'Available'),
             );
           },
         ),
         ListTile(
-          title: const Text('Price: 100,000 <= 200,000'),
+          title: Text(
+            'Price: 100,000 <= 200,000',
+            style: TextStyle(
+              color:
+                  currentFilterType == 'price_range'
+                      ? Colors.blue
+                      : Colors.black,
+              fontWeight:
+                  currentFilterType == 'price_range'
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+            ),
+          ),
           onTap: () {
             Navigator.pop(context);
+            onFilterSelected('price_range');
             context.read<ListPropertyBloc>().add(
               FetchProperties(minPrice: 100000, maxPrice: 200000),
             );
           },
         ),
         ListTile(
-          title: const Text('City: Cityville'),
+          title: Text(
+            'City: Cityville',
+            style: TextStyle(
+              color: currentFilterType == 'city' ? Colors.blue : Colors.black,
+              fontWeight:
+                  currentFilterType == 'city'
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+            ),
+          ),
           onTap: () {
             Navigator.pop(context);
+            onFilterSelected('city');
             context.read<ListPropertyBloc>().add(
               FetchProperties(location: 'Cityville'),
             );
           },
         ),
         ListTile(
-          title: const Text('Tags: New & Furnished'),
+          title: Text(
+            'Tags: New & Furnished',
+            style: TextStyle(
+              color: currentFilterType == 'tags' ? Colors.blue : Colors.black,
+              fontWeight:
+                  currentFilterType == 'tags'
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+            ),
+          ),
           onTap: () {
             Navigator.pop(context);
+            onFilterSelected('tags');
             context.read<ListPropertyBloc>().add(
               FetchProperties(tags: ['New', 'Furnished']),
             );

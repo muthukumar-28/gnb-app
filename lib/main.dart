@@ -1,16 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter/foundation.dart';
 import 'package:sizer/sizer.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
-
 import 'package:Gnb_Property/features/properties/properties_bloc.dart';
 import 'package:Gnb_Property/features/properties/properties_list.dart';
 import 'package:Gnb_Property/features/properties/property_detail.dart';
-import 'package:Gnb_Property/session_storage/session_storage.dart';
 import 'package:Gnb_Property/utils/size_config.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -23,7 +20,6 @@ Future<void> backgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // await Firebase.initializeApp();
   await Firebase.initializeApp(
     options: const FirebaseOptions(
       apiKey: "AIzaSyA6B7vPnEUEBQqyX5i7rq8L-OecuDyqv58",
@@ -33,8 +29,6 @@ void main() async {
       appId: "1:1006197314254:android:e18b521502162d8657369f",
     ),
   );
-
-  await SessionStorage.init();
 
   FirebaseMessaging.onBackgroundMessage(backgroundHandler);
 
@@ -46,8 +40,6 @@ void main() async {
     final data = event.notification.additionalData;
     if (data != null && data.containsKey("property_id")) {
       initialPropertyId = data["property_id"].toString();
-      print("🔔 OneSignal propertyId: $initialPropertyId");
-
       navigatorKey.currentState?.pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const Splash()),
         (route) => false,
@@ -86,8 +78,6 @@ class _MyAppState extends State<MyApp> {
           message.data['property_id'] ?? message.data['propertyId'];
       if (propertyId != null) {
         initialPropertyId = propertyId.toString();
-        print("🔔 Firebase onMessageOpenedApp propertyId: $initialPropertyId");
-
         navigatorKey.currentState?.pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const Splash()),
           (route) => false,
@@ -102,7 +92,6 @@ class _MyAppState extends State<MyApp> {
           initialMessage.data['propertyId'];
       if (propertyId != null) {
         initialPropertyId = propertyId.toString();
-        print("🔔 Firebase getInitialMessage propertyId: $initialPropertyId");
       }
     }
   }
@@ -177,9 +166,6 @@ class _SplashState extends State<Splash> with SingleTickerProviderStateMixin {
   }
 
   void startSliderAnimation() {
-    SessionStorage.getToken();
-    SessionStorage.getUserData();
-
     const duration = Duration(seconds: 3);
     const int steps = 28;
     const double endValue = 1.0;

@@ -44,7 +44,6 @@ class _AnalyticsReaderPageState extends State<AnalyticsReaderPage> {
 
       analyticsList.add(sampleAnalytics);
       await _analyticsFile.writeAsString(json.encode(analyticsList));
-      print('[Analytics] Saved to ${_analyticsFile.path}');
     } catch (e) {
       print('[Error] Failed to save: $e');
     }
@@ -55,14 +54,11 @@ class _AnalyticsReaderPageState extends State<AnalyticsReaderPage> {
       if (await _analyticsFile.exists()) {
         final contents = await _analyticsFile.readAsString();
         final data = json.decode(contents);
-        print('[Analytics] Data: $data');
         _showDialog(data.toString());
       } else {
-        print('[Analytics] File not found.');
         _showDialog('No analytics data found.');
       }
     } catch (e) {
-      print('[Error] Read failed: $e');
       _showDialog('Error: $e');
     }
   }
